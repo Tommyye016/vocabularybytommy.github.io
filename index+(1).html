@@ -1,0 +1,1683 @@
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tommy背单词神器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        // 配置Tailwind自定义颜色和字体
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5', // 主色调：靛蓝色，传达信任和专注
+                        secondary: '#10B981', // 辅助色：绿色，用于成功状态
+                        accent: '#F59E0B', // 强调色：琥珀色，用于重要按钮
+                        speaking: '#EC4899', // 口语词汇色：粉色
+                        writing: '#3B82F6', // 写作词汇色：蓝色
+                        neutral: '#F3F4F6', // 中性色：浅灰，用于背景
+                        dark: '#1F2937', // 深色：深灰，用于文字
+                        admin: '#DC2626', // 管理员颜色：红色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+            .btn-hover {
+                transition: all 0.3s ease;
+            }
+            .btn-hover:hover {
+                transform: translateY(-2px);
+            }
+            .page-transition {
+                transition: opacity 0.5s ease, transform 0.5s ease;
+            }
+            .progress-ring-circle {
+                transition: stroke-dashoffset 0.35s;
+                transform: rotate(-90deg);
+                transform-origin: 50% 50%;
+            }
+            .dropdown-item {
+                @apply px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors;
+            }
+            .dropdown-active {
+                @apply bg-primary/10 text-primary font-medium;
+            }
+            .badge {
+                @apply text-xs px-2 py-0.5 rounded-full font-medium;
+            }
+            .stat-card {
+                @apply bg-white rounded-xl p-6 card-shadow transition-all duration-300 hover:shadow-lg;
+            }
+            .loading-spinner {
+                border-top-color: #4F46E5;
+                animation: spinner 0.6s linear infinite;
+            }
+            @keyframes spinner {
+                to { transform: rotate(360deg); }
+            }
+            .meaning-item {
+                @apply mb-3 p-3 bg-gray-50 rounded-lg border border-gray-100;
+            }
+            .word-card {
+                @apply border border-gray-200 rounded-xl p-5 mb-4 hover:border-primary/30 transition-colors;
+            }
+            .checkbox-custom {
+                @apply w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary/50;
+            }
+        }
+    </style>
+</head>
+<body class="bg-neutral min-h-screen font-sans text-dark">
+    <!-- 登录页面 -->
+    <div id="login-page" class="page-transition min-h-screen flex items-center justify-center p-6">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full card-shadow">
+            <div class="text-center mb-8">
+                <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-primary mb-2">Tommy背单词神器</h1>
+                <p class="text-gray-600">请登录或注册以继续</p>
+            </div>
+            
+            <!-- 登录表单 -->
+            <div id="login-form">
+                <div class="mb-4">
+                    <label for="login-username" class="block text-gray-700 font-medium mb-2">用户名</label>
+                    <input type="text" id="login-username" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="输入用户名">
+                </div>
+                
+                <div class="mb-6">
+                    <label for="login-password" class="block text-gray-700 font-medium mb-2">密码</label>
+                    <input type="password" id="login-password" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="输入密码">
+                </div>
+                
+                <button id="login-btn" class="w-full bg-primary text-white rounded-lg px-6 py-3 font-medium btn-hover mb-4">
+                    登录
+                </button>
+                
+                <!-- 添加密码提示文字 -->
+                <div class="text-center text-gray-500 text-xs mb-4">
+                    如遗忘密码，联系管理员修改
+                </div>
+                
+                <div class="text-center text-gray-600">
+                    还没有账号？ <span id="show-register" class="text-primary cursor-pointer hover:underline">立即注册</span>
+                </div>
+                
+                <div id="login-error" class="hidden mt-4 text-red-500 text-sm text-center"></div>
+            </div>
+            
+            <!-- 注册表单 -->
+            <div id="register-form" class="hidden">
+                <div class="mb-4">
+                    <label for="register-username" class="block text-gray-700 font-medium mb-2">用户名</label>
+                    <input type="text" id="register-username" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="设置用户名">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="register-password" class="block text-gray-700 font-medium mb-2">密码</label>
+                    <input type="password" id="register-password" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="设置密码（至少6位）">
+                </div>
+                
+                <div class="mb-6">
+                    <label for="register-confirm" class="block text-gray-700 font-medium mb-2">确认密码</label>
+                    <input type="password" id="register-confirm" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="再次输入密码">
+                </div>
+                
+                <button id="register-btn" class="w-full bg-secondary text-white rounded-lg px-6 py-3 font-medium btn-hover mb-4">
+                    注册
+                </button>
+                
+                <div class="text-center text-gray-600">
+                    已有账号？ <span id="show-login" class="text-primary cursor-pointer hover:underline">返回登录</span>
+                </div>
+                
+                <div id="register-error" class="hidden mt-4 text-red-500 text-sm text-center"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 欢迎页面 -->
+    <div id="welcome-page" class="page-transition hidden min-h-screen flex flex-col items-center justify-center p-6">
+        <div class="text-center mb-12">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-primary mb-4">Tommy背单词神器</h1>
+            <p class="text-gray-600 text-lg max-w-2xl mx-auto">
+                一款纯粹高效的极简主义单词学习工具，助你轻松掌握新词汇
+            </p>
+        </div>
+        
+        <!-- 调整为两列两行布局 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-3xl">
+            <!-- 单词录入页面按钮 -->
+            <button onclick="showPage('input-page')" class="bg-primary text-white rounded-full p-6 flex flex-col items-center justify-center btn-hover card-shadow">
+                <i class="fa fa-pencil-square-o text-4xl mb-4"></i>
+                <span class="text-lg font-medium">单词录入</span>
+            </button>
+            
+            <!-- 背诵页面按钮 -->
+            <button onclick="showPage('recite-page')" class="bg-secondary text-white rounded-full p-6 flex flex-col items-center justify-center btn-hover card-shadow">
+                <i class="fa fa-book text-4xl mb-4"></i>
+                <span class="text-lg font-medium">单词背诵</span>
+            </button>
+            
+            <!-- 单词本页面按钮 -->
+            <button onclick="showPage('vocab-book-page')" class="bg-accent text-white rounded-full p-6 flex flex-col items-center justify-center btn-hover card-shadow">
+                <i class="fa fa-list-alt text-4xl mb-4"></i>
+                <span class="text-lg font-medium">单词本</span>
+            </button>
+            
+            <!-- 单词生成页面按钮 -->
+            <button onclick="showPage('word-generator-page')" class="bg-purple-600 text-white rounded-full p-6 flex flex-col items-center justify-center btn-hover card-shadow">
+                <i class="fa fa-random text-4xl mb-4"></i>
+                <span class="text-lg font-medium">按级别生成单词</span>
+            </button>
+        </div>
+        
+        <div class="mt-12 flex justify-center">
+            <button onclick="showPage('user-center-page')" class="bg-white text-primary border border-primary rounded-full p-4 flex flex-col items-center justify-center btn-hover card-shadow w-32">
+                <i class="fa fa-user-circle text-3xl mb-2"></i>
+                <span class="text-base font-medium">用户中心</span>
+            </button>
+        </div>
+        
+        <div class="mt-12 flex items-center gap-4">
+            <span class="text-gray-500">当前用户: <span id="current-user" class="font-medium text-primary">Tommy</span></span>
+            <button id="logout-btn" class="text-gray-600 hover:text-red-500 transition-colors text-sm">
+                <i class="fa fa-sign-out mr-1"></i>退出登录
+            </button>
+        </div>
+    </div>
+
+    <!-- 管理员页面 -->
+    <div id="admin-page" class="page-transition hidden p-6">
+        <div class="max-w-6xl mx-auto">
+            <!-- 顶部导航 -->
+            <div class="flex justify-between items-center mb-8">
+                <button onclick="logoutUser()" class="text-gray-600 hover:text-red-500 transition-colors">
+                    <i class="fa fa-sign-out mr-2"></i>退出登录
+                </button>
+                <h2 class="text-2xl font-bold text-admin">管理员中心</h2>
+                <div class="w-10"></div> <!-- 占位，保持标题居中 -->
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 card-shadow mb-8">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <i class="fa fa-users text-admin mr-2"></i>用户管理
+                </h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">用户名</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">注册时间</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">总单词量</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">掌握率</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后学习</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- 用户数据将动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="no-users-message" class="hidden py-12 text-center text-gray-500">
+                    暂无用户数据
+                </div>
+                
+                <!-- 管理员操作反馈 -->
+                <div id="admin-action-feedback" class="hidden mt-4 px-4 py-2 rounded-lg text-sm"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户中心页面 -->
+    <div id="user-center-page" class="page-transition hidden p-6">
+        <div class="max-w-4xl mx-auto">
+            <!-- 顶部导航 -->
+            <div class="flex justify-between items-center mb-8">
+                <button onclick="showPage('welcome-page')" class="text-gray-600 hover:text-primary transition-colors">
+                    <i class="fa fa-arrow-left mr-2"></i>返回首页
+                </button>
+                <h2 class="text-2xl font-bold text-primary">用户中心</h2>
+                <div class="w-10"></div> <!-- 占位，保持标题居中 -->
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 用户信息和统计 -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- 用户信息卡片 -->
+                    <div class="stat-card">
+                        <h3 class="text-xl font-semibold mb-4">用户信息</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-gray-500 text-sm">用户名</p>
+                                <p class="font-medium" id="user-info-username">--</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">注册时间</p>
+                                <p class="font-medium" id="user-info-regtime">--</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">总单词量</p>
+                                <p class="font-medium" id="user-info-totalwords">0</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">最后学习时间</p>
+                                <p class="font-medium" id="user-info-laststudy">未学习</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 单词录入页面 -->
+    <div id="input-page" class="page-transition hidden p-6">
+        <div class="max-w-4xl mx-auto">
+            <!-- 顶部导航 -->
+            <div class="flex justify-between items-center mb-8">
+                <button onclick="showPage('welcome-page')" class="text-gray-600 hover:text-primary transition-colors">
+                    <i class="fa fa-arrow-left mr-2"></i>返回首页
+                </button>
+                <h2 class="text-2xl font-bold text-primary">单词录入</h2>
+                <div class="w-10"></div> <!-- 占位，保持标题居中 -->
+            </div>
+            
+            <!-- 分组选择器 -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">单词分组</label>
+                <div class="flex items-center">
+                    <select id="word-group" class="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        <option value="list1">Word List 1</option>
+                        <option value="list2">Word List 2</option>
+                        <option value="list3">Word List 3</option>
+                        <option value="custom">+ 创建新分组</option>
+                    </select>
+                    <span id="word-count" class="ml-4 bg-gray-200 rounded-full px-3 py-1 text-sm text-gray-700">
+                        单词数量: 0
+                    </span>
+                </div>
+            </div>
+            
+            <!-- 单词输入表单 -->
+            <div class="bg-white rounded-xl p-6 card-shadow mb-6">
+                <div class="mb-4">
+                    <label for="word" class="block text-gray-700 font-medium mb-2">单词</label>
+                    <input type="text" id="word" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="输入单词">
+                </div>
+                
+                <!-- 添加Deepseek辅助按钮 -->
+                <div class="mb-6">
+                    <button id="deepseek-helper-btn" class="bg-accent text-white rounded-lg px-6 py-2 font-medium btn-hover flex items-center">
+                        <i class="fa fa-magic mr-2"></i>让Deepseek生成释义、词性、例句
+                        <span id="deepseek-loading" class="hidden ml-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full loading-spinner"></span>
+                    </button>
+                </div>
+                
+                <!-- 多词性和多释义区域 -->
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">词性与释义</label>
+                    <div id="meanings-container">
+                        <div class="meaning-item">
+                            <div class="flex gap-4 mb-2">
+                                <div class="flex-1">
+                                    <select class="part-of-speech w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                        <option value="">请选择词性</option>
+                                        <option value="n. 名词">n. 名词</option>
+                                        <option value="v. 动词">v. 动词</option>
+                                        <option value="adj. 形容词">adj. 形容词</option>
+                                        <option value="adv. 副词">adv. 副词</option>
+                                        <option value="prep. 介词">prep. 介词</option>
+                                        <option value="conj. 连词">conj. 连词</option>
+                                        <option value="pron. 代词">pron. 代词</option>
+                                        <option value="num. 数词">num. 数词</option>
+                                        <option value="int. 感叹词">int. 感叹词</option>
+                                        <option value="其他">其他</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="remove-meaning-btn text-red-500 hover:text-red-700 self-center" disabled>
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </div>
+                            <textarea class="definition w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50" rows="2" placeholder="输入单词的中文解释"></textarea>
+                        </div>
+                    </div>
+                    <button type="button" id="add-meaning-btn" class="mt-2 text-primary hover:text-primary/80 text-sm flex items-center">
+                        <i class="fa fa-plus-circle mr-1"></i> 添加更多词性和释义
+                    </button>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="example" class="block text-gray-700 font-medium mb-2">例句 (可输入多个，用分号分隔)</label>
+                    <textarea id="example" rows="2" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="输入包含该单词的例句"></textarea>
+                </div>
+                
+                <!-- 口语和写作词汇标签选择 -->
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">词汇分类</label>
+                    <div class="flex flex-wrap gap-4">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="is-speaking" class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-speaking/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-speaking"></div>
+                            <span class="ml-3 text-gray-700">口语词汇</span>
+                        </label>
+                        
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="is-writing" class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-writing/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-writing"></div>
+                            <span class="ml-3 text-gray-700">写作词汇</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <button id="add-word" class="bg-primary text-white rounded-lg px-6 py-2 font-medium btn-hover">
+                    添加单词
+                </button>
+            </div>
+            
+            <!-- 操作反馈 -->
+            <div id="feedback" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-6">
+                <span id="feedback-message"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 背诵页面 -->
+    <div id="recite-page" class="page-transition hidden p-6">
+        <div class="max-w-4xl mx-auto">
+            <!-- 顶部导航 -->
+            <div class="flex justify-between items-center mb-8">
+                <button onclick="showPage('welcome-page')" class="text-gray-600 hover:text-primary transition-colors">
+                    <i class="fa fa-arrow-left mr-2"></i>返回首页
+                </button>
+                <h2 class="text-2xl font-bold text-secondary">单词背诵</h2>
+                <div class="w-10"></div> <!-- 占位，保持标题居中 -->
+            </div>
+            
+            <!-- 选择背诵组 -->
+            <div id="select-group-section" class="mb-8">
+                <h3 class="text-lg font-semibold mb-4">选择要背诵的单词组</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <button class="select-group-btn bg-white border border-gray-300 rounded-xl p-4 text-center hover:border-secondary hover:text-secondary transition-colors btn-hover" data-group="list1">
+                        Word List 1
+                        <div class="text-sm text-gray-500 mt-1">0个单词</div>
+                    </button>
+                    <button class="select-group-btn bg-white border border-gray-300 rounded-xl p-4 text-center hover:border-secondary hover:text-secondary transition-colors btn-hover" data-group="list2">
+                        Word List 2
+                        <div class="text-sm text-gray-500 mt-1">0个单词</div>
+                    </button>
+                    <button class="select-group-btn bg-white border border-gray-300 rounded-xl p-4 text-center hover:border-secondary hover:text-secondary transition-colors btn-hover" data-group="list3">
+                        Word List 3
+                        <div class="text-sm text-gray-500 mt-1">0个单词</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 单词本页面 -->
+    <div id="vocab-book-page" class="page-transition hidden p-6">
+        <div class="max-w-5xl mx-auto">
+            <!-- 顶部导航 -->
+            <div class="flex justify-between items-center mb-8">
+                <button onclick="showPage('welcome-page')" class="text-gray-600 hover:text-primary transition-colors">
+                    <i class="fa fa-arrow-left mr-2"></i>返回首页
+                </button>
+                <h2 class="text-2xl font-bold text-accent">单词本</h2>
+                <div class="w-10"></div>
+            </div>
+            
+            <!-- 背诵情况统计 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="stat-card">
+                    <div class="text-gray-500 mb-1">近一天背诵</div>
+                    <div class="text-3xl font-bold text-primary" id="stats-today">0</div>
+                    <div class="text-sm text-gray-500 mt-2">新学: <span id="stats-today-new">0</span> 复习: <span id="stats-today-review">0</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-gray-500 mb-1">近一周背诵</div>
+                    <div class="text-3xl font-bold text-primary" id="stats-week">0</div>
+                    <div class="text-sm text-gray-500 mt-2">新学: <span id="stats-week-new">0</span> 复习: <span id="stats-week-review">0</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-gray-500 mb-1">近一月背诵</div>
+                    <div class="text-3xl font-bold text-primary" id="stats-month">0</div>
+                    <div class="text-sm text-gray-500 mt-2">新学: <span id="stats-month-new">0</span> 复习: <span id="stats-month-review">0</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-gray-500 mb-1">近一年背诵</div>
+                    <div class="text-3xl font-bold text-primary" id="stats-year">0</div>
+                    <div class="text-sm text-gray-500 mt-2">新学: <span id="stats-year-new">0</span> 复习: <span id="stats-year-review">0</span></div>
+                </div>
+            </div>
+            
+            <!-- 单词列表区域 -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <h3 class="text-xl font-semibold mb-6">单词列表</h3>
+                <div id="vocab-list-container">
+                    <!-- 单词列表将动态生成 -->
+                    <div class="text-center text-gray-500 py-12">
+                        暂无单词数据，请先添加单词
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增：单词生成页面 -->
+    <div id="word-generator-page" class="page-transition hidden p-6">
+        <div class="max-w-5xl mx-auto">
+            <!-- 顶部导航 -->
+            <div class="flex justify-between items-center mb-8">
+                <button onclick="showPage('welcome-page')" class="text-gray-600 hover:text-primary transition-colors">
+                    <i class="fa fa-arrow-left mr-2"></i>返回首页
+                </button>
+                <h2 class="text-2xl font-bold text-purple-600">按级别生成单词</h2>
+                <div class="w-10"></div>
+            </div>
+            
+            <!-- 级别选择和生成区域 -->
+            <div class="bg-white rounded-xl p-6 card-shadow mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-gray-700 font-medium mb-2">选择单词级别</label>
+                        <select id="word-level" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500/50">
+                            <option value="">请选择单词级别</option>
+                            <option value="小学">小学</option>
+                            <option value="初中">初中</option>
+                            <option value="高中/高考">高中/高考</option>
+                            <option value="四级">四级</option>
+                            <option value="六级">六级</option>
+                            <option value="考研">考研</option>
+                            <option value="托福">托福</option>
+                            <option value="雅思">雅思</option>
+                            <option value="GRE">GRE</option>
+                            <option value="GMAT">GMAT</option>
+                        </select>
+                        <p class="text-gray-500 text-sm mt-2">
+                            选择相应级别后，系统将生成该级别的常用单词列表
+                        </p>
+                    </div>
+                    
+                    <div class="flex items-end">
+                        <button id="generate-words-btn" class="w-full bg-purple-600 text-white rounded-lg px-6 py-2 font-medium btn-hover flex items-center justify-center">
+                            <i class="fa fa-refresh mr-2"></i>生成单词列表
+                            <span id="word-generation-loading" class="hidden ml-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full loading-spinner"></span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 分组选择 -->
+                <div class="mt-6">
+                    <label class="block text-gray-700 font-medium mb-2">添加到分组</label>
+                    <select id="generated-word-group" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500/50">
+                        <option value="list1">Word List 1</option>
+                        <option value="list2">Word List 2</option>
+                        <option value="list3">Word List 3</option>
+                        <option value="custom">+ 创建新分组</option>
+                    </select>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="mt-6 flex gap-4">
+                    <button id="select-all-words" class="bg-blue-500 text-white rounded-lg px-6 py-2 font-medium btn-hover">
+                        <i class="fa fa-check-square-o mr-2"></i>全选
+                    </button>
+                    <button id="deselect-all-words" class="bg-gray-500 text-white rounded-lg px-6 py-2 font-medium btn-hover">
+                        <i class="fa fa-square-o mr-2"></i>取消全选
+                    </button>
+                    <button id="add-selected-words" class="bg-green-500 text-white rounded-lg px-6 py-2 font-medium btn-hover">
+                        <i class="fa fa-plus-circle mr-2"></i>添加选中单词
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 单词列表区域 -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold">单词列表</h3>
+                    <div class="text-gray-500 text-sm" id="generated-words-count">
+                        共 0 个单词
+                    </div>
+                </div>
+                
+                <div id="generated-words-container" class="space-y-4">
+                    <!-- 生成的单词将在这里显示 -->
+                    <div class="text-center text-gray-500 py-12">
+                        请选择单词级别并点击生成按钮
+                    </div>
+                </div>
+                
+                <!-- 加载更多按钮 -->
+                <div class="mt-6 text-center">
+                    <button id="load-more-words" class="bg-purple-100 text-purple-600 rounded-lg px-6 py-2 font-medium btn-hover hidden">
+                        <i class="fa fa-plus mr-2"></i>加载更多单词
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 操作反馈 -->
+            <div id="generator-feedback" class="hidden mt-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
+                <span id="generator-feedback-message"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Deepseek API配置
+        const DEEPSEEK_API_KEY = 'sk-ee104665046049cbb64ed3e6f16dfd90';
+        const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+        
+        // 管理员账号信息
+        const ADMIN_USERNAME = 'Administrator';
+        const ADMIN_PASSWORD = 'administrator';
+        
+        // 存储当前生成的单词列表
+        let currentGeneratedWords = [];
+        // 存储当前单词级别
+        let currentWordLevel = '';
+        
+        // 用户认证相关变量
+        let currentUser = null;
+        let isAdmin = false;
+        
+        // 页面切换功能
+        function showPage(pageId) {
+            // 隐藏所有页面
+            document.querySelectorAll('[id$="-page"]').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // 显示目标页面并更新数据
+            document.getElementById(pageId).classList.remove('hidden');
+            
+            // 如果是单词本页面，更新统计数据
+            if (pageId === 'vocab-book-page') {
+                updateVocabStats();
+            }
+            
+            // 如果是单词生成页面，恢复上次位置
+            if (pageId === 'word-generator-page') {
+                restoreWordSelectionPosition();
+            }
+        }
+        
+        // 初始化用户系统
+        function initUserSystem() {
+            // 确保管理员账号存在
+            ensureAdminAccountExists();
+            
+            // 检查是否有已登录用户
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                const userData = JSON.parse(savedUser);
+                currentUser = userData;
+                isAdmin = userData.username === ADMIN_USERNAME;
+                
+                if (isAdmin) {
+                    showPage('admin-page');
+                } else {
+                    showPage('welcome-page');
+                    document.getElementById('current-user').textContent = currentUser.username;
+                    initAppData(); // 初始化当前用户的数据
+                }
+            } else {
+                // 没有登录用户，显示登录页面
+                showPage('login-page');
+            }
+            
+            // 初始化用户数据库（如果不存在）
+            if (!localStorage.getItem('users')) {
+                localStorage.setItem('users', JSON.stringify({}));
+            }
+        }
+        
+        // 确保管理员账号存在
+        function ensureAdminAccountExists() {
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+            
+            // 如果管理员账号不存在，则创建
+            if (!users[ADMIN_USERNAME]) {
+                users[ADMIN_USERNAME] = {
+                    password: ADMIN_PASSWORD,
+                    createdAt: new Date().toISOString(),
+                    isAdmin: true
+                };
+                
+                localStorage.setItem('users', JSON.stringify(users));
+            }
+        }
+        
+        // 注册新用户
+        function registerUser(username, password) {
+            // 防止注册管理员账号
+            if (username === ADMIN_USERNAME) {
+                return { success: false, message: '该用户名已被系统占用' };
+            }
+            
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+            
+            // 检查用户名是否已存在
+            if (users[username]) {
+                return { success: false, message: '用户名已存在' };
+            }
+            
+            // 简单验证密码长度
+            if (password.length < 6) {
+                return { success: false, message: '密码长度至少为6位' };
+            }
+            
+            // 创建新用户
+            users[username] = {
+                password: password,
+                createdAt: new Date().toISOString(),
+                isAdmin: false
+            };
+            
+            // 保存用户数据
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            // 为新用户初始化单词数据
+            initUserData(username);
+            
+            return { success: true };
+        }
+        
+        // 用户登录
+        function loginUser(username, password) {
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+            const user = users[username];
+            
+            // 检查用户是否存在
+            if (!user) {
+                return { success: false, message: '用户名或密码不正确' };
+            }
+            
+            // 检查密码是否正确
+            if (user.password !== password) {
+                return { success: false, message: '用户名或密码不正确' };
+            }
+            
+            // 登录成功，保存当前用户
+            currentUser = { username: username };
+            isAdmin = username === ADMIN_USERNAME;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            return { success: true };
+        }
+        
+        // 用户登出
+        function logoutUser() {
+            if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('currentUser');
+                currentUser = null;
+                isAdmin = false;
+                initUserSystem();
+            }
+        }
+        
+        // 初始化用户数据
+        function initUserData(username) {
+            const userDataKey = `user_${username}_data`;
+            
+            // 如果用户数据不存在，则初始化
+            if (!localStorage.getItem(userDataKey)) {
+                const initialData = {
+                    groups: {
+                        list1: { 
+                            name: 'Word List 1', 
+                            words: [], 
+                            lastReviewed: null 
+                        },
+                        list2: { name: 'Word List 2', words: [], lastReviewed: null },
+                        list3: { name: 'Word List 3', words: [], lastReviewed: null }
+                    },
+                    currentGroup: 'list1',
+                    lastStudyTime: null,
+                    // 添加学习记录
+                    studyRecords: [],
+                    // 单词选择位置记忆
+                    wordSelectionProgress: {} // 格式: {级别: 最后选择的索引}
+                };
+                localStorage.setItem(userDataKey, JSON.stringify(initialData));
+            }
+        }
+        
+        // 初始化应用数据
+        function initAppData() {
+            if (!currentUser) return;
+            
+            const userDataKey = `user_${currentUser.username}_data`;
+            initUserData(currentUser.username);
+        }
+        
+        // 获取应用数据
+        function getAppData() {
+            if (!currentUser) return null;
+            
+            const userDataKey = `user_${currentUser.username}_data`;
+            return JSON.parse(localStorage.getItem(userDataKey) || '{"groups": {}, "currentGroup": "", "studyRecords": [], "wordSelectionProgress": {}}');
+        }
+        
+        // 保存应用数据
+        function saveAppData(data) {
+            if (!currentUser) return;
+            
+            const userDataKey = `user_${currentUser.username}_data`;
+            localStorage.setItem(userDataKey, JSON.stringify(data));
+        }
+        
+        // 添加单词
+        function addWord() {
+            const word = document.getElementById('word').value.trim();
+            const groupId = document.getElementById('word-group').value;
+            const isSpeaking = document.getElementById('is-speaking').checked;
+            const isWriting = document.getElementById('is-writing').checked;
+            const example = document.getElementById('example').value.trim();
+            
+            // 获取所有词性和释义
+            const meanings = [];
+            const meaningItems = document.querySelectorAll('#meanings-container .meaning-item');
+            
+            meaningItems.forEach(item => {
+                const pos = item.querySelector('.part-of-speech').value.trim();
+                const definition = item.querySelector('.definition').value.trim();
+                
+                if (pos && definition) {
+                    meanings.push({ pos, definition });
+                }
+            });
+            
+            // 验证
+            if (!word) {
+                showFeedback('单词为必填项', 'error');
+                return;
+            }
+            
+            if (meanings.length === 0) {
+                showFeedback('至少需要填写一个词性和释义', 'error');
+                return;
+            }
+            
+            const data = getAppData();
+            if (!data) return;
+            
+            // 检查单词是否已存在
+            const wordExists = data.groups[groupId].words.some(w => w.word.toLowerCase() === word.toLowerCase());
+            if (wordExists) {
+                showFeedback('该单词已存在于当前分组', 'error');
+                return;
+            }
+            
+            // 添加新单词
+            data.groups[groupId].words.push({
+                word,
+                meanings, // 存储多个词性和释义
+                example,
+                mastered: false,
+                isSpeaking: isSpeaking,
+                isWriting: isWriting,
+                added: new Date().toISOString(),
+                reviewCount: 0, // 复习次数
+                lastReviewed: null // 最后复习时间
+            });
+            
+            // 添加学习记录（新学）
+            data.studyRecords.push({
+                word,
+                type: 'new', // new表示新学，review表示复习
+                timestamp: new Date().toISOString()
+            });
+            
+            // 更新最后学习时间
+            data.lastStudyTime = new Date().toISOString();
+            
+            saveAppData(data);
+            updateWordCount();
+            
+            // 清空表单
+            document.getElementById('word').value = '';
+            document.getElementById('example').value = '';
+            document.getElementById('is-speaking').checked = false;
+            document.getElementById('is-writing').checked = false;
+            
+            // 重置词性和释义区域，只保留一个空项
+            const container = document.getElementById('meanings-container');
+            container.innerHTML = '';
+            addMeaningField();
+            
+            showFeedback(`成功添加单词: ${word}`, 'success');
+        }
+        
+        // 添加新的词性和释义字段
+        function addMeaningField(pos = '', definition = '') {
+            const container = document.getElementById('meanings-container');
+            const meaningItems = container.querySelectorAll('.meaning-item');
+            const isFirstItem = meaningItems.length === 0;
+            
+            const div = document.createElement('div');
+            div.className = 'meaning-item';
+            div.innerHTML = `
+                <div class="flex gap-4 mb-2">
+                    <div class="flex-1">
+                        <select class="part-of-speech w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="">请选择词性</option>
+                            <option value="n. 名词">n. 名词</option>
+                            <option value="v. 动词">v. 动词</option>
+                            <option value="adj. 形容词">adj. 形容词</option>
+                            <option value="adv. 副词">adv. 副词</option>
+                            <option value="prep. 介词">prep. 介词</option>
+                            <option value="conj. 连词">conj. 连词</option>
+                            <option value="pron. 代词">pron. 代词</option>
+                            <option value="num. 数词">num. 数词</option>
+                            <option value="int. 感叹词">int. 感叹词</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <button type="button" class="remove-meaning-btn text-red-500 hover:text-red-700 self-center ${isFirstItem ? 'opacity-50 cursor-not-allowed' : ''}" ${isFirstItem ? 'disabled' : ''}>
+                        <i class="fa fa-trash-o"></i>
+                    </button>
+                </div>
+                <textarea class="definition w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50" rows="2" placeholder="输入单词的中文解释">${definition}</textarea>
+            `;
+            
+            container.appendChild(div);
+            
+            // 设置默认值
+            if (pos) {
+                const select = div.querySelector('.part-of-speech');
+                select.value = pos;
+            }
+            
+            // 添加删除事件
+            const removeBtn = div.querySelector('.remove-meaning-btn');
+            removeBtn.addEventListener('click', function() {
+                div.remove();
+                // 更新其他删除按钮状态
+                updateRemoveButtons();
+            });
+        }
+        
+        // 更新删除按钮状态
+        function updateRemoveButtons() {
+            const meaningItems = document.querySelectorAll('#meanings-container .meaning-item');
+            const removeBtns = document.querySelectorAll('.remove-meaning-btn');
+            
+            if (meaningItems.length <= 1) {
+                removeBtns.forEach(btn => {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                });
+            } else {
+                removeBtns.forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                });
+            }
+        }
+        
+        // 显示反馈信息
+        function showFeedback(message, type) {
+            const feedbackEl = document.getElementById('feedback');
+            const messageEl = document.getElementById('feedback-message');
+            
+            messageEl.textContent = message;
+            feedbackEl.classList.remove('hidden', 'bg-green-100', 'border-green-400', 'text-green-700', 
+                                     'bg-red-100', 'border-red-400', 'text-red-700');
+            
+            if (type === 'success') {
+                feedbackEl.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+            } else {
+                feedbackEl.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+            }
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                feedbackEl.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // 显示单词生成器反馈
+        function showGeneratorFeedback(message, type) {
+            const feedbackEl = document.getElementById('generator-feedback');
+            const messageEl = document.getElementById('generator-feedback-message');
+            
+            messageEl.textContent = message;
+            feedbackEl.classList.remove('hidden', 'bg-green-100', 'border-green-400', 'text-green-700', 
+                                     'bg-red-100', 'border-red-400', 'text-red-700');
+            
+            if (type === 'success') {
+                feedbackEl.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+            } else {
+                feedbackEl.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+            }
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                feedbackEl.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // 更新单词计数显示
+        function updateWordCount() {
+            const data = getAppData();
+            if (!data) return;
+            
+            const groupId = document.getElementById('word-group').value;
+            const count = data.groups[groupId]?.words?.length || 0;
+            document.getElementById('word-count').textContent = `单词数量: ${count}`;
+        }
+        
+        // 调用Deepseek API生成单词信息 - 支持多词性和多释义
+        async function generateWordInfoWithDeepseek() {
+            const word = document.getElementById('word').value.trim();
+            
+            if (!word) {
+                showFeedback('请先输入单词', 'error');
+                return;
+            }
+            
+            // 显示加载状态
+            const button = document.getElementById('deepseek-helper-btn');
+            const loadingIndicator = document.getElementById('deepseek-loading');
+            button.disabled = true;
+            loadingIndicator.classList.remove('hidden');
+            
+            try {
+                // 调用Deepseek API
+                const response = await fetch(DEEPSEEK_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-chat",
+                        messages: [
+                            {
+                                role: "system",
+                                content: `你是一个英语单词助手。我会给你一个英语单词，请你返回所有可能的词性和对应的中文释义，以及至少一个包含该单词的英文例句（附带中文翻译）。
+请严格按照以下JSON格式返回，不要添加任何额外内容：
+{
+  "meanings": [
+    {
+      "partOfSpeech": "词性（使用标准缩写如n.名词, v.动词等）",
+      "definition": "对应的中文释义"
+    }
+  ],
+  "example": "英文例句（中文翻译）"
+}`
+                            },
+                            {
+                                role: "user",
+                                content: word
+                            }
+                        ]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API请求失败: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+                
+                // 解析API返回的JSON
+                const result = JSON.parse(content);
+                
+                // 清空现有字段，只保留一个空项
+                const container = document.getElementById('meanings-container');
+                container.innerHTML = '';
+                
+                // 填充多个词性和释义
+                if (result.meanings && result.meanings.length > 0) {
+                    result.meanings.forEach(meaning => {
+                        addMeaningField(meaning.partOfSpeech || '', meaning.definition || '');
+                    });
+                } else {
+                    // 如果没有返回结果，添加一个空字段
+                    addMeaningField();
+                }
+                
+                // 填充例句
+                document.getElementById('example').value = result.example || '';
+                
+                showFeedback(`已成功生成单词"${word}"的信息`, 'success');
+                
+            } catch (error) {
+                console.error('Deepseek API调用失败:', error);
+                showFeedback('生成单词信息失败，请稍后再试', 'error');
+            } finally {
+                // 隐藏加载状态
+                button.disabled = false;
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+        
+        // 更新单词本统计数据
+        function updateVocabStats() {
+            const data = getAppData();
+            if (!data || !data.studyRecords) return;
+            
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const weekAgo = new Date(today);
+            weekAgo.setDate(today.getDate() - 7);
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(today.getMonth() - 1);
+            const yearAgo = new Date(today);
+            yearAgo.setFullYear(today.getFullYear() - 1);
+            
+            // 统计各时间段的数据
+            const stats = {
+                today: { new: 0, review: 0 },
+                week: { new: 0, review: 0 },
+                month: { new: 0, review: 0 },
+                year: { new: 0, review: 0 }
+            };
+            
+            data.studyRecords.forEach(record => {
+                const recordDate = new Date(record.timestamp);
+                
+                // 近一年
+                if (recordDate >= yearAgo) {
+                    stats.year[record.type]++;
+                    
+                    // 近一月
+                    if (recordDate >= monthAgo) {
+                        stats.month[record.type]++;
+                        
+                        // 近一周
+                        if (recordDate >= weekAgo) {
+                            stats.week[record.type]++;
+                            
+                            // 今天
+                            if (recordDate >= today) {
+                                stats.today[record.type]++;
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 更新UI
+            document.getElementById('stats-today').textContent = stats.today.new + stats.today.review;
+            document.getElementById('stats-today-new').textContent = stats.today.new;
+            document.getElementById('stats-today-review').textContent = stats.today.review;
+            
+            document.getElementById('stats-week').textContent = stats.week.new + stats.week.review;
+            document.getElementById('stats-week-new').textContent = stats.week.new;
+            document.getElementById('stats-week-review').textContent = stats.week.review;
+            
+            document.getElementById('stats-month').textContent = stats.month.new + stats.month.review;
+            document.getElementById('stats-month-new').textContent = stats.month.new;
+            document.getElementById('stats-month-review').textContent = stats.month.review;
+            
+            document.getElementById('stats-year').textContent = stats.year.new + stats.year.review;
+            document.getElementById('stats-year-new').textContent = stats.year.new;
+            document.getElementById('stats-year-review').textContent = stats.year.review;
+        }
+        
+        // 生成特定级别的单词列表
+        async function generateWordsByLevel() {
+            const level = document.getElementById('word-level').value;
+            
+            if (!level) {
+                showGeneratorFeedback('请选择单词级别', 'error');
+                return;
+            }
+            
+            // 保存当前级别
+            currentWordLevel = level;
+            
+            // 显示加载状态
+            const button = document.getElementById('generate-words-btn');
+            const loadingIndicator = document.getElementById('word-generation-loading');
+            button.disabled = true;
+            loadingIndicator.classList.remove('hidden');
+            
+            // 清空容器
+            const container = document.getElementById('generated-words-container');
+            container.innerHTML = '<div class="text-center text-gray-500 py-12"><i class="fa fa-circle-o-notch fa-spin text-xl mr-2"></i>正在生成单词列表...</div>';
+            document.getElementById('generated-words-count').textContent = '共 0 个单词';
+            
+            try {
+                // 调用Deepseek API生成特定级别的单词列表
+                const response = await fetch(DEEPSEEK_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-chat",
+                        messages: [
+                            {
+                                role: "system",
+                                content: `你是一个英语教育专家。我会给你一个英语水平级别，请你返回该级别的20个常用英语单词。
+每个单词需要包含：单词本身、所有主要词性、对应的中文释义、至少一个英文例句及其中文翻译。
+请严格按照以下JSON格式返回，不要添加任何额外内容，不要有解释说明：
+{
+  "words": [
+    {
+      "word": "单词",
+      "meanings": [
+        {
+          "partOfSpeech": "词性（使用标准缩写如n.名词, v.动词等）",
+          "definition": "对应的中文释义"
+        }
+      ],
+      "example": "英文例句（中文翻译）"
+    }
+  ]
+}`
+                            },
+                            {
+                                role: "user",
+                                content: `请生成${level}级别的20个常用英语单词`
+                            }
+                        ]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API请求失败: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+                
+                // 解析API返回的JSON
+                const result = JSON.parse(content);
+                
+                if (result.words && result.words.length > 0) {
+                    currentGeneratedWords = result.words;
+                    renderGeneratedWords();
+                    document.getElementById('generated-words-count').textContent = `共 ${result.words.length} 个单词`;
+                    document.getElementById('load-more-words').classList.remove('hidden');
+                    showGeneratorFeedback(`成功生成${level}级别的${result.words.length}个单词`, 'success');
+                } else {
+                    container.innerHTML = '<div class="text-center text-gray-500 py-12">未能生成该级别的单词列表，请尝试其他级别</div>';
+                    showGeneratorFeedback('未能生成单词列表，请尝试其他级别', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Deepseek API调用失败:', error);
+                container.innerHTML = '<div class="text-center text-gray-500 py-12">生成单词列表失败，请稍后再试</div>';
+                showGeneratorFeedback('生成单词列表失败，请稍后再试', 'error');
+            } finally {
+                // 隐藏加载状态
+                button.disabled = false;
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+        
+        // 渲染生成的单词列表
+        function renderGeneratedWords() {
+            const container = document.getElementById('generated-words-container');
+            container.innerHTML = '';
+            
+            if (currentGeneratedWords.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-12">暂无单词数据</div>';
+                return;
+            }
+            
+            // 获取上次选择的位置
+            const data = getAppData();
+            const startIndex = data?.wordSelectionProgress?.[currentWordLevel] || 0;
+            
+            currentGeneratedWords.forEach((wordItem, index) => {
+                const wordCard = document.createElement('div');
+                wordCard.className = 'word-card';
+                wordCard.dataset.index = index;
+                
+                // 如果是上次结束位置之后的单词，添加高亮样式
+                if (index >= startIndex) {
+                    wordCard.classList.add('bg-purple-50/50');
+                }
+                
+                // 构建词性和释义HTML
+                let meaningsHtml = '';
+                if (wordItem.meanings && wordItem.meanings.length > 0) {
+                    wordItem.meanings.forEach(meaning => {
+                        meaningsHtml += `
+                            <div class="mb-1">
+                                <span class="font-medium text-primary">${meaning.partOfSpeech}</span>
+                                <span class="ml-2">${meaning.definition}</span>
+                            </div>
+                        `;
+                    });
+                }
+                
+                wordCard.innerHTML = `
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 mt-1">
+                            <input type="checkbox" class="word-checkbox checkbox-custom" data-word="${wordItem.word}">
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <h4 class="text-xl font-bold">${wordItem.word}</h4>
+                                <span class="text-sm text-gray-500">${index + 1}</span>
+                            </div>
+                            <div class="mb-3">
+                                ${meaningsHtml}
+                            </div>
+                            <div class="text-sm bg-gray-50 p-3 rounded-lg">
+                                <p class="text-gray-800 italic">${wordItem.example || '无例句'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(wordCard);
+                
+                // 添加复选框事件
+                const checkbox = wordCard.querySelector('.word-checkbox');
+                checkbox.addEventListener('change', function() {
+                    // 如果勾选了，更新最后选择的位置
+                    if (this.checked) {
+                        updateWordSelectionPosition(index);
+                    }
+                });
+            });
+            
+            // 自动滚动到上次结束的位置
+            if (startIndex > 0 && startIndex < currentGeneratedWords.length) {
+                const targetCard = container.querySelector(`[data-index="${startIndex}"]`);
+                if (targetCard) {
+                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+        
+        // 保存单词选择位置
+        function updateWordSelectionPosition(index) {
+            const data = getAppData();
+            if (!data) return;
+            
+            // 保存当前级别的最后选择位置
+            data.wordSelectionProgress[currentWordLevel] = index + 1;
+            saveAppData(data);
+        }
+        
+        // 恢复单词选择位置
+        function restoreWordSelectionPosition() {
+            if (!currentWordLevel) return;
+            
+            const data = getAppData();
+            if (!data) return;
+            
+            // 高亮显示从上次结束位置开始的单词
+            const startIndex = data.wordSelectionProgress[currentWordLevel] || 0;
+            const cards = document.querySelectorAll('#generated-words-container .word-card');
+            
+            cards.forEach((card, index) => {
+                if (index >= startIndex) {
+                    card.classList.add('bg-purple-50/50');
+                } else {
+                    card.classList.remove('bg-purple-50/50');
+                }
+            });
+        }
+        
+        // 添加选中的单词到单词本
+        function addSelectedWords() {
+            const checkboxes = document.querySelectorAll('.word-checkbox:checked');
+            const groupId = document.getElementById('generated-word-group').value;
+            
+            if (checkboxes.length === 0) {
+                showGeneratorFeedback('请先选择要添加的单词', 'error');
+                return;
+            }
+            
+            if (!groupId) {
+                showGeneratorFeedback('请选择要添加到的分组', 'error');
+                return;
+            }
+            
+            const data = getAppData();
+            if (!data) return;
+            
+            let addedCount = 0;
+            
+            checkboxes.forEach(checkbox => {
+                const word = checkbox.dataset.word;
+                // 找到对应的单词数据
+                const wordData = currentGeneratedWords.find(item => item.word === word);
+                
+                if (wordData) {
+                    // 检查单词是否已存在
+                    const wordExists = data.groups[groupId].words.some(w => w.word.toLowerCase() === word.toLowerCase());
+                    
+                    if (!wordExists) {
+                        // 添加新单词
+                        data.groups[groupId].words.push({
+                            word: wordData.word,
+                            meanings: wordData.meanings.map(m => ({
+                                pos: m.partOfSpeech,
+                                definition: m.definition
+                            })),
+                            example: wordData.example,
+                            mastered: false,
+                            isSpeaking: false, // 默认不标记为口语词汇
+                            isWriting: false, // 默认不标记为写作词汇
+                            added: new Date().toISOString(),
+                            reviewCount: 0,
+                            lastReviewed: null
+                        });
+                        
+                        // 添加学习记录（新学）
+                        data.studyRecords.push({
+                            word: wordData.word,
+                            type: 'new',
+                            timestamp: new Date().toISOString()
+                        });
+                        
+                        addedCount++;
+                        checkbox.checked = false; // 取消勾选
+                    }
+                }
+            });
+            
+            // 更新最后学习时间
+            data.lastStudyTime = new Date().toISOString();
+            saveAppData(data);
+            
+            showGeneratorFeedback(`成功添加 ${addedCount} 个单词到单词本`, 'success');
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化用户系统
+            initUserSystem();
+            
+            // 添加初始的词性和释义字段
+            addMeaningField();
+            
+            // 添加更多词性和释义按钮事件
+            document.getElementById('add-meaning-btn').addEventListener('click', function() {
+                addMeaningField();
+            });
+            
+            // 登录按钮事件
+            document.getElementById('login-btn').addEventListener('click', function() {
+                const username = document.getElementById('login-username').value.trim();
+                const password = document.getElementById('login-password').value.trim();
+                
+                if (!username || !password) {
+                    document.getElementById('login-error').textContent = '用户名和密码不能为空';
+                    document.getElementById('login-error').classList.remove('hidden');
+                    return;
+                }
+                
+                const result = loginUser(username, password);
+                if (result.success) {
+                    if (username === ADMIN_USERNAME) {
+                        showPage('admin-page');
+                    } else {
+                        document.getElementById('current-user').textContent = username;
+                        initAppData();
+                        updateWordCount();
+                        showPage('welcome-page');
+                    }
+                    
+                    // 清空表单
+                    document.getElementById('login-username').value = '';
+                    document.getElementById('login-password').value = '';
+                    document.getElementById('login-error').classList.add('hidden');
+                } else {
+                    document.getElementById('login-error').textContent = result.message;
+                    document.getElementById('login-error').classList.remove('hidden');
+                }
+            });
+            
+            // 注册按钮事件
+            document.getElementById('register-btn').addEventListener('click', function() {
+                const username = document.getElementById('register-username').value.trim();
+                const password = document.getElementById('register-password').value.trim();
+                const confirmPassword = document.getElementById('register-confirm').value.trim();
+                
+                if (!username || !password || !confirmPassword) {
+                    document.getElementById('register-error').textContent = '所有字段都不能为空';
+                    document.getElementById('register-error').classList.remove('hidden');
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    document.getElementById('register-error').textContent = '两次输入的密码不一致';
+                    document.getElementById('register-error').classList.remove('hidden');
+                    return;
+                }
+                
+                const result = registerUser(username, password);
+                if (result.success) {
+                    // 注册成功后自动登录
+                    loginUser(username, password);
+                    document.getElementById('current-user').textContent = username;
+                    initAppData();
+                    updateWordCount();
+                    showPage('welcome-page');
+                    
+                    // 清空表单
+                    document.getElementById('register-username').value = '';
+                    document.getElementById('register-password').value = '';
+                    document.getElementById('register-confirm').value = '';
+                    document.getElementById('register-error').classList.add('hidden');
+                } else {
+                    document.getElementById('register-error').textContent = result.message;
+                    document.getElementById('register-error').classList.remove('hidden');
+                }
+            });
+            
+            // 切换到注册表单
+            document.getElementById('show-register').addEventListener('click', function() {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+                document.getElementById('login-error').classList.add('hidden');
+            });
+            
+            // 切换到登录表单
+            document.getElementById('show-login').addEventListener('click', function() {
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-error').classList.add('hidden');
+            });
+            
+            // 登出按钮事件
+            document.getElementById('logout-btn').addEventListener('click', logoutUser);
+            
+            // 添加单词按钮事件
+            document.getElementById('add-word').addEventListener('click', addWord);
+            
+            // Deepseek辅助按钮事件
+            document.getElementById('deepseek-helper-btn').addEventListener('click', generateWordInfoWithDeepseek);
+            
+            // 分组选择变化事件
+            document.getElementById('word-group').addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    const newGroupName = prompt('请输入新分组名称:');
+                    if (newGroupName && newGroupName.trim() !== '') {
+                        const data = getAppData();
+                        if (!data) return;
+                        
+                        const newGroupId = 'custom_' + Date.now();
+                        data.groups[newGroupId] = { 
+                            name: newGroupName.trim(), 
+                            words: [], 
+                            lastReviewed: null 
+                        };
+                        saveAppData(data);
+                        
+                        // 添加新选项
+                        const option = document.createElement('option');
+                        option.value = newGroupId;
+                        option.textContent = newGroupName.trim();
+                        option.selected = true;
+                        this.insertBefore(option, this.lastChild);
+                        
+                        updateWordCount();
+                    } else {
+                        // 如果取消或输入为空，恢复到之前的选择
+                        const data = getAppData();
+                        if (data) {
+                            this.value = data.currentGroup;
+                        }
+                    }
+                } else {
+                    const data = getAppData();
+                    if (data) {
+                        data.currentGroup = this.value;
+                        saveAppData(data);
+                        updateWordCount();
+                    }
+                }
+            });
+            
+            // 单词生成页面 - 生成单词按钮事件
+            document.getElementById('generate-words-btn').addEventListener('click', generateWordsByLevel);
+            
+            // 单词生成页面 - 全选按钮事件
+            document.getElementById('select-all-words').addEventListener('click', function() {
+                document.querySelectorAll('.word-checkbox').forEach(checkbox => {
+                    checkbox.checked = true;
+                    // 更新最后选择的位置为最后一个单词
+                    if (parseInt(checkbox.closest('.word-card').dataset.index) === currentGeneratedWords.length - 1) {
+                        updateWordSelectionPosition(currentGeneratedWords.length - 1);
+                    }
+                });
+            });
+            
+            // 单词生成页面 - 取消全选按钮事件
+            document.getElementById('deselect-all-words').addEventListener('click', function() {
+                document.querySelectorAll('.word-checkbox').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            });
+            
+            // 单词生成页面 - 添加选中单词按钮事件
+            document.getElementById('add-selected-words').addEventListener('click', addSelectedWords);
+            
+            // 单词生成页面 - 分组选择变化事件
+            document.getElementById('generated-word-group').addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    const newGroupName = prompt('请输入新分组名称:');
+                    if (newGroupName && newGroupName.trim() !== '') {
+                        const data = getAppData();
+                        if (!data) return;
+                        
+                        const newGroupId = 'custom_' + Date.now();
+                        data.groups[newGroupId] = { 
+                            name: newGroupName.trim(), 
+                            words: [], 
+                            lastReviewed: null 
+                        };
+                        saveAppData(data);
+                        
+                        // 添加新选项
+                        const option = document.createElement('option');
+                        option.value = newGroupId;
+                        option.textContent = newGroupName.trim();
+                        option.selected = true;
+                        this.insertBefore(option, this.lastChild);
+                    } else {
+                        // 如果取消或输入为空，恢复到之前的选择
+                        const data = getAppData();
+                        if (data) {
+                            this.value = data.currentGroup || 'list1';
+                        }
+                    }
+                }
+            });
+            
+            // 单词生成页面 - 加载更多按钮事件
+            document.getElementById('load-more-words').addEventListener('click', function() {
+                if (!currentWordLevel) return;
+                
+                // 显示加载状态
+                this.disabled = true;
+                this.innerHTML = '<i class="fa fa-circle-o-notch fa-spin mr-2"></i>加载中...';
+                
+                // 调用API加载更多单词
+                fetch(DEEPSEEK_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-chat",
+                        messages: [
+                            {
+                                role: "system",
+                                content: `你是一个英语教育专家。我会给你一个英语水平级别，请你返回该级别的20个常用英语单词。
+每个单词需要包含：单词本身、所有主要词性、对应的中文释义、至少一个英文例句及其中文翻译。
+请严格按照以下JSON格式返回，不要添加任何额外内容，不要有解释说明：
+{
+  "words": [
+    {
+      "word": "单词",
+      "meanings": [
+        {
+          "partOfSpeech": "词性（使用标准缩写如n.名词, v.动词等）",
+          "definition": "对应的中文释义"
+        }
+      ],
+      "example": "英文例句（中文翻译）"
+    }
+  ]
+}`
+                            },
+                            {
+                                role: "user",
+                                content: `请再生成${currentWordLevel}级别的20个常用英语单词，不要重复之前已经提供过的单词`
+                            }
+                        ]
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('加载失败');
+                    return response.json();
+                })
+                .then(data => {
+                    const content = data.choices[0].message.content;
+                    const result = JSON.parse(content);
+                    
+                    if (result.words && result.words.length > 0) {
+                        // 添加到现有列表
+                        currentGeneratedWords = [...currentGeneratedWords, ...result.words];
+                        renderGeneratedWords();
+                        document.getElementById('generated-words-count').textContent = `共 ${currentGeneratedWords.length} 个单词`;
+                        showGeneratorFeedback(`成功加载更多${currentGeneratedWords.length}个单词`, 'success');
+                    } else {
+                        showGeneratorFeedback('没有更多单词可以加载', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('加载更多单词失败:', error);
+                    showGeneratorFeedback('加载更多单词失败，请稍后再试', 'error');
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fa fa-plus mr-2"></i>加载更多单词';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+    
